@@ -58,7 +58,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 EXPOSE 3000
 
-ENV PORT=3000
+ARG PORT=3000
+ENV PORT=$PORT
 
 # Start as root, fix /data permissions, then run app as nextjs user
 # Using 'su' which is built into Alpine base image

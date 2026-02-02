@@ -21,7 +21,7 @@ export const checkIfModelIsRunning = async (
   modelName: string | undefined,
   provider: AiProvider,
 ): Promise<ModelCheckResult> => {
-  const ollamaBase = process.env.OLLAMA_BASE_URL || "http://localhost:11434"
+  const ollamaBase = process.env.OLLAMA_BASE_PATH || "/ollama";
   // Only check for Ollama provider
   if (provider !== AiProvider.OLLAMA) {
     return { isRunning: true };
@@ -86,7 +86,7 @@ export const fetchRunningModels = async (): Promise<{
   models: string[];
   error?: string;
 }> => {
-  const ollamaBase = "/ollama"
+  const ollamaBase = process.env.OLLAMA_BASE_PATH || "/ollama";
 
   try {
     const response = await fetch(`${ollamaBase}/api/ps`, {
