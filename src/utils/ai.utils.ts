@@ -86,7 +86,7 @@ export const fetchRunningModels = async (): Promise<{
   models: string[];
   error?: string;
 }> => {
-  const ollamaBase = process.env.OLLAMA_BASE_URL || "http://localhost:11434"
+  const ollamaBase = process.env.OLLAMA_BASE_URL || "http://jobsync.lan:8081/ollama"
 
   try {
     const response = await fetch(`${ollamaBase}/api/ps`, {
