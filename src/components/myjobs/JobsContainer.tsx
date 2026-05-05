@@ -9,7 +9,7 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { File, ListFilter, Search } from "lucide-react";
+import { File, ListFilter, Loader, Search, X } from "lucide-react";
 import {
   deleteJobById,
   getJobDetails,
@@ -75,47 +75,122 @@ function JobsContainer({
     },
     [queryParams],
   );
+  const [companyFilter, setCompanyFilter] = useState<string | null>(
+    queryParams.get("company"),
+  );
+  const [titleFilter, setTitleFilter] = useState<string | null>(
+    queryParams.get("title"),
+  );
+  const [locationFilter, setLocationFilter] = useState<string | null>(
+    queryParams.get("location"),
+  );
+  const [sourceFilter, setSourceFilter] = useState<string | null>(
+    queryParams.get("source"),
+  );
+  const [appliedFilter, setAppliedFilter] = useState(
+    queryParams.get("applied") === "true",
+  );
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [filterKey, setFilterKey] = useState<string>();
   const [searchTerm, setSearchTerm] = useState("");
   const [editJob, setEditJob] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [recordsPerPage, setRecordsPerPage] = useState<number>(
     APP_CONSTANTS.RECORDS_PER_PAGE,
   );
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [noteJobId, setNoteJobId] = useState("");
   const hasSearched = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const companyLabel = companyFilter
+    ? companies.find((c) => c.value === companyFilter)?.label
+    : null;
+
+  const titleLabel = titleFilter
+    ? titles.find((t) => t.value === titleFilter)?.label
+    : null;
+
+  const locationLabel = locationFilter
+    ? locations.find((l) => l.value === locationFilter)?.label
+    : null;
+
+  const sourceLabel = sourceFilter
+    ? sources.find((s) => s.value === sourceFilter)?.label
+    : null;
+
+  const clearCompanyFilter = () => {
+    setCompanyFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
+  const clearTitleFilter = () => {
+    setTitleFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
+  const clearLocationFilter = () => {
+    setLocationFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
+  const clearSourceFilter = () => {
+    setSourceFilter(null);
+    setAppliedFilter(false);
+    router.push(pathname);
+  };
+
+  useEffect(() => {
+    const cp = queryParams.get("company");
+    const tp = queryParams.get("title");
+    const lp = queryParams.get("location");
+    const sp = queryParams.get("source");
+    const ap = queryParams.get("applied") === "true";
+    setCompanyFilter(cp);
+    setTitleFilter(tp);
+    setLocationFilter(lp);
+    setSourceFilter(sp);
+    setAppliedFilter(ap);
+  }, [queryParams]);
 
   const jobsPerPage = recordsPerPage;
 
   const loadJobs = useCallback(
     async (page: number, filter?: string, search?: string) => {
-      setLoading(true);
+      if (page === 1) setInitialLoading(true);
+      else setLoadingMore(true);
       const { success, data, total, message } = await getJobsList(
         page,
         jobsPerPage,
         filter,
         search,
+        companyFilter || undefined,
+        appliedFilter || undefined,
+        titleFilter || undefined,
+        locationFilter || undefined,
+        sourceFilter || undefined,
       );
       if (success && data) {
         setJobs((prev) => (page === 1 ? data : [...prev, ...data]));
         setTotalJobs(total);
         setPage(page);
-        setLoading(false);
       } else {
         toast({
           variant: "destructive",
           title: "Error!",
           description: message,
         });
-        setLoading(false);
-        return;
       }
+      setInitialLoading(false);
+      setLoadingMore(false);
     },
-    [jobsPerPage],
+    [jobsPerPage, companyFilter, appliedFilter, titleFilter, locationFilter, sourceFilter],
   );
 
   const reloadJobs = useCallback(async () => {
@@ -200,6 +275,38 @@ function JobsContainer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
+  // Infinite scroll: auto-load next page when sentinel is visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          !initialLoading &&
+          !loadingMore &&
+          jobs.length < totalJobs
+        ) {
+          loadJobs(page + 1, filterKey, searchTerm || undefined);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [
+    jobs.length,
+    totalJobs,
+    page,
+    filterKey,
+    searchTerm,
+    initialLoading,
+    loadingMore,
+    loadJobs,
+  ]);
+
   const onFilterChange = (filterBy: string) => {
     if (filterBy === "none") {
       setFilterKey(undefined);
@@ -249,6 +356,42 @@ function JobsContainer({
         <CardHeader className="flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <CardTitle>My Jobs</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            {companyLabel && (
+              <button
+                onClick={clearCompanyFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {companyLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {titleLabel && (
+              <button
+                onClick={clearTitleFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {titleLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {locationLabel && (
+              <button
+                onClick={clearLocationFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {locationLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {sourceLabel && (
+              <button
+                onClick={clearSourceFilter}
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                {sourceLabel}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
             <div className="relative flex-1 min-w-[140px] sm:flex-none">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -281,7 +424,7 @@ function JobsContainer({
               size="sm"
               variant="outline"
               className="h-8 gap-1"
-              disabled={loading}
+              disabled={initialLoading}
               onClick={downloadJobsList}
             >
               <File className="h-3.5 w-3.5" />
@@ -302,7 +445,7 @@ function JobsContainer({
           </div>
         </CardHeader>
         <CardContent>
-          {loading && <Loading />}
+          {initialLoading && <Loading />}
           {jobs.length > 0 && (
             <>
               <MyJobsTable
@@ -329,18 +472,10 @@ function JobsContainer({
             </>
           )}
           {jobs.length < totalJobs && (
-            <div className="flex justify-center p-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  loadJobs(page + 1, filterKey, searchTerm || undefined)
-                }
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? "Loading..." : "Load More"}
-              </Button>
+            <div ref={sentinelRef} className="flex justify-center p-4">
+              {loadingMore && (
+                <Loader className="h-5 w-5 animate-spin text-blue-500" />
+              )}
             </div>
           )}
         </CardContent>

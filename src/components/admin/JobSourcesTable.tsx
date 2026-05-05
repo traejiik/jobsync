@@ -18,7 +18,8 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobSource } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { Briefcase, MoreHorizontal, Trash } from "lucide-react";
+import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
 import { deleteJobSourceById } from "@/actions/jobSource.actions";
@@ -98,7 +99,16 @@ function JobSourcesTable({
                   {source.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {source._count?.jobsApplied}
+                  {source._count?.jobsApplied ? (
+                    <Link
+                      href={`/dashboard/myjobs?source=${encodeURIComponent(source.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {source._count.jobsApplied}
+                    </Link>
+                  ) : (
+                    (source._count?.jobsApplied ?? 0)
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -110,6 +120,16 @@ function JobSourcesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {source._count?.jobsApplied ? (
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                          <Link
+                            href={`/dashboard/myjobs?source=${encodeURIComponent(source.value)}&applied=true`}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            View Jobs
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
                         onClick={() => onDeleteJobSource(source)}

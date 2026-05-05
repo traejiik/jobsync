@@ -16,8 +16,9 @@ import {
   TableRow,
 } from "../ui/table";
 import { Company } from "@/models/job.model";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Briefcase, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import { deleteCompanyById } from "@/actions/company.actions";
 import { toast } from "../ui/use-toast";
 import { DeleteAlertDialog } from "../DeleteAlertDialog";
@@ -87,6 +88,7 @@ function CompaniesTable({
             <TableHead>Company Name</TableHead>
             <TableHead className="hidden sm:table-cell">Value</TableHead>
             <TableHead>Jobs Applied</TableHead>
+            <TableHead>Rejected</TableHead>
             <TableHead>Actions</TableHead>
             <TableHead>
               <span className="sr-only">Actions</span>
@@ -110,7 +112,19 @@ function CompaniesTable({
                   {company.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {company._count?.jobsApplied}
+                  {company._count?.jobsApplied ? (
+                    <Link
+                      href={`/dashboard/myjobs?company=${encodeURIComponent(company.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {company._count.jobsApplied}
+                    </Link>
+                  ) : (
+                    (company._count?.jobsApplied ?? 0)
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {company._count?.jobsRejected ?? 0}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -122,6 +136,16 @@ function CompaniesTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {company._count?.jobsApplied ? (
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                          <Link
+                            href={`/dashboard/myjobs?company=${encodeURIComponent(company.value)}&applied=true`}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            View Jobs
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => editCompany(company.id)}

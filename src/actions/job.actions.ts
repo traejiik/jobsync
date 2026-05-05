@@ -41,6 +41,11 @@ export const getJobsList = async (
   limit: number = APP_CONSTANTS.RECORDS_PER_PAGE,
   filter?: string,
   search?: string,
+  companyValue?: string,
+  appliedOnly?: boolean,
+  titleValue?: string,
+  locationValue?: string,
+  sourceValue?: string,
 ): Promise<any | undefined> => {
   try {
     const user = await getCurrentUser();
@@ -67,13 +72,41 @@ export const getJobsList = async (
       ...filterBy,
     };
 
+    if (companyValue) {
+      whereClause.Company = { value: companyValue };
+    }
+
+    if (titleValue) {
+      whereClause.JobTitle = { value: titleValue };
+    }
+
+    if (locationValue) {
+      whereClause.Location = { value: locationValue };
+    }
+
+    if (sourceValue) {
+      whereClause.JobSource = { value: sourceValue };
+    }
+
+    if (appliedOnly) {
+      whereClause.applied = true;
+    }
+
     if (search) {
-      whereClause.OR = [
-        { JobTitle: { label: { contains: search } } },
-        { Company: { label: { contains: search } } },
-        { Location: { label: { contains: search } } },
+      const searchConditions: Record<string, any>[] = [];
+      if (!titleValue) {
+        searchConditions.push({ JobTitle: { label: { contains: search } } });
+      }
+      if (!companyValue) {
+        searchConditions.push({ Company: { label: { contains: search } } });
+      }
+      if (!locationValue) {
+        searchConditions.push({ Location: { label: { contains: search } } });
+      }
+      searchConditions.push(
         { description: { contains: search } },
-      ];
+      );
+      whereClause.OR = searchConditions;
     }
 
     const [data, total] = await Promise.all([

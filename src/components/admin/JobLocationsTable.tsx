@@ -19,7 +19,8 @@ import {
   TableRow,
 } from "../ui/table";
 import { JobLocation } from "@/models/job.model";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { Briefcase, MoreHorizontal, Trash } from "lucide-react";
+import Link from "next/link";
 import { AlertDialog } from "@/models/alertDialog.model";
 import { toast } from "../ui/use-toast";
 import { deleteJobLocationById } from "@/actions/jobLocation.actions";
@@ -95,7 +96,16 @@ function JobLocationsTable({
                   {location.value}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {location._count?.jobsApplied}
+                  {location._count?.jobsApplied ? (
+                    <Link
+                      href={`/dashboard/myjobs?location=${encodeURIComponent(location.value)}&applied=true`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {location._count.jobsApplied}
+                    </Link>
+                  ) : (
+                    (location._count?.jobsApplied ?? 0)
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -107,6 +117,16 @@ function JobLocationsTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      {location._count?.jobsApplied ? (
+                        <DropdownMenuItem className="cursor-pointer" asChild>
+                          <Link
+                            href={`/dashboard/myjobs?location=${encodeURIComponent(location.value)}&applied=true`}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            View Jobs
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         className="text-red-600 cursor-pointer"
                         onClick={() => onDeleteJobLocation(location)}
